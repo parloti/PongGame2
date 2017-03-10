@@ -1,9 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* global app */
 
 "use strict";
@@ -44,15 +38,48 @@ app.controller('canvas', function ($scope) {
 		airFrictionAndWind: 0.3,
 		leftIsModeComputer: true,
 		rightIsModeComputer: false,
-		difficultyModeComputer: 30//1-100
+		difficultyModeComputer: 30, //1-100,
+		widthHeightRatio: 1.775,
+		canvasHeight: 0,
+		canvasWidth: 0,
+		maxHeightSize: 400
 	};
 
 	var keys = {};
-	if (true) {
+	function canvasCurrentTarget($event, canvas) {
+		console.log($event);
+		console.log(canvas);
 
+		console.log(canvas.offsetX);
+		console.log(canvas.offsetY);
 	}
-	$scope.init = function () {
+
+	$scope.definesDimensionsCanvas=function (canvas) {
+		if (screen.height > Config.maxHeightSize && screen.width > Config.maxHeightSize * Config.widthHeightRatio) {
+			Config.canvasHeight = 400;
+		}
+		else {
+			Config.canvasHeight = Math.min(screen.height, screen.width/Config.widthHeightRatio);
+		}
+		Config.canvasWidth = Config.canvasHeight * Config.widthHeightRatio;
+		canvas.height = Config.canvasHeight;
+		canvas.width = Config.canvasWidth;
+		angular.element(canvas).css(
+				{
+					'height': Config.canvasHeight + 'px',
+					'width': Config.canvasWidth + 'px'
+				}
+		);
+	};
+
+	$scope.init = function ($event) {
 		//click on div.canvas allows you to pause and resume play
+		var elem;
+		canvas = document.getElementById('game');
+		$scope.definesDimensionsCanvas(canvas);
+
+		canvasCurrentTarget($event, canvas);
+
 		if ($scope.gameStarted === false) {
 			$scope.gameStarted = true;
 			window.requestAnimationFrame($scope.draw);
@@ -82,7 +109,6 @@ app.controller('canvas', function ($scope) {
 			$scope.startMotionInterval = function () {};
 		};
 
-		canvas = document.getElementById('game');
 		ballCoord = {
 			x: canvas.width / 2,
 			y: canvas.height / 2
@@ -303,8 +329,8 @@ app.controller('canvas', function ($scope) {
 	};
 
 	$scope.computerPlayer = function () {
-		console.log(ballCoord);
-		for (var i = 0; i < Config.difficultyModeComputer/10; i++) {
+		//console.log(ballCoord);
+		for (var i = 0; i < Config.difficultyModeComputer / 10; i++) {
 			if (Config.leftIsModeComputer && velocity.horizontalSense < 0) {
 				if (ballCoord.y < playerBarY.left + Config.playerBarHeight && velocity.verticalSense < 0) {
 					playerBarY.left = Math.max(playerBarY.left - Config.stepsPlayerBar, 0);
