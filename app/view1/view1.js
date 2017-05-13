@@ -30,6 +30,12 @@ angular.module('myApp.view1', ['ngRoute'])
             }
         }
 
+        function Mouse() {
+            //https://docs.angularjs.org/api/ngTouch/service/$swipe
+            //http://stackoverflow.com/questions/26170029/ng-touchstart-and-ng-touchend-in-angularjs/26176810#26176810
+
+        }
+
         function Game() {
             this.isGameStarted = false;
             this.isGamePaused = true;
@@ -109,8 +115,7 @@ angular.module('myApp.view1', ['ngRoute'])
             centralCircle();
             centralLine();
         }
-        Field.prototype.onClick=function($event){
-            console.log("currentTarget");
+        Field.prototype.onClick = function ($event) {
             if ($event) {
                 $scope.lastMouseDown = $event;
             }
@@ -129,15 +134,16 @@ angular.module('myApp.view1', ['ngRoute'])
             else if ($event.offsetX > Config.canvasWidth - Config.canvasWidth / 8) {
                 console.log("moverigthbar");
                 console.log($event.offsetY, playerBarY.right + Config.playerBarHeight / 2);
-                if ($event.offsetY < playerBarY.right + Config.playerBarHeight / 2) {
+                if ($event.offsetY < $scope.Players.right.Bar.position.y + $scope.Players.right.Bar.height / 2) {
                     console.log("levantar barra");
                     var isMouseAction = true;
                     $scope.startMotionIntervalMouse({sense: "up", player: "right"});
-
+                    $scope.Players.right.Bar.move({sense: "up", player: "right"});
                 }
-                else if ($event.offsetY > playerBarY.right + Config.playerBarHeight / 2) {
+                else if ($event.offsetY > $scope.Players.right.Bar.position.y + $scope.Players.right.Bar.height / 2) {
                     console.log("abaixar barra");
                     $scope.startMotionIntervalMouse({sense: "down", player: "right"});
+                    $scope.Players.right.Bar.move({sense: "down", player: "right"});
                 }
             }
             else if (Math.pow($event.offsetX - Config.canvasWidth / 2, 2) + Math.pow($event.offsetY - Config.canvasHeight / 2, 2) < 50 * 50) {
@@ -431,8 +437,8 @@ angular.module('myApp.view1', ['ngRoute'])
                     y: $scope.Field.center.y - this.centerY
                 }
                 this.isModeComputer = false;
-                this.computerAIPercentage = 30;
-                this.computerMovementCondition = false;
+                this.computerSpeed = 3;
+                this.computerMoveCondition = false;
             }
 
             function Scoreboard() {
@@ -446,12 +452,18 @@ angular.module('myApp.view1', ['ngRoute'])
                 };
             }
 
-            Bar.prototype.move = function () {
-                if (this.isModeComputer === true) {
-                    let condition = this.computerMovementCondition();
-                    if (condition) {
-                        this.computerPlayer();
-                    }
+            Bar.prototype.move = function (movement) {
+                if (movement.sense === "up") {
+                    this.position.y = Math.max(this.position.y - this.steps, 0);
+                }
+                else if (movement.sense === "down") {
+                    this.position.y = Math.min(this.position.y + this.steps, $scope.Field.height - this.height);
+                }
+                else if (movement) {
+                    throw new Error("Movement sense is '" + movement.sense + "but need to be either 'up' or 'down'");
+                }
+                else {
+                    throw new Error("");
                 }
             }
             Bar.prototype.draw = function () {
@@ -460,20 +472,57 @@ angular.module('myApp.view1', ['ngRoute'])
                 ctx.fillStyle = this.color;
                 ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
             }
-            Bar.prototype.computerPlayer = function () {
-                for (var i = 0; i < this.computerAIPercentage / 10; i++) {
-                    if ($scope.Ball.velocity.verticalSense < 0) {
-                        if ($scope.Ball.position.y < this.position.y + this.height) {
-                            this.position.y = Math.max(this.position.y - this.steps, 0);
-                        }
-                    }
-                    else if ($scope.Ball.velocity.verticalSense > 0) {
-                        if ($scope.Ball.position.y > this.position.y) {
+            Bar.prototype.computerMove = function () {
+                if (this.isModeComputer === true) {
+                    let condition = this.computerMoveCondition();
+                    if (condition) {
+                        for (var i = 0; i < this.computerSpeed; i++) {
                             let canvas = $scope.Field.Canvas;
-                            this.position.y = Math.min(this.position.y + this.steps, canvas.height - this.height);
+                            let ball = $scope.Ball;
+
+                            let ballVerticalSense = ball.velocity.verticalSense;
+                            let ballPosition = ball.position.y;
+                            let barPosition = this.position.y;
+                            let ballIsMovingUp = ballVerticalSense < 0;
+                            let ballIsMovingDown = ballVerticalSense > 0;
+
+                            let topOfTheBar = barPosition;
+                            let bottomOfTheBar = barPosition + this.height;
+                            let barCenter = barPosition + this.height / 2;
+
+                            let ballCenterIsAboveTopOfTheBar = ballPosition < topOfTheBar;
+                            let ballCenterIsUnderBottomOfTheBar = ballPosition > bottomOfTheBar;
+
+                            let ballCenterIsAboveBarCenter = ballPosition < barCenter;
+                            let ballCenterIsUnderBarCenter = ballPosition > barCenter;
+
+                            if (ballCenterIsAboveTopOfTheBar) {
+                                this.moveTopUp();
+                            }
+                            else if (ballCenterIsUnderBottomOfTheBar) {
+                                this.moveBottomDown();
+                            }
+                            else {
+                                if (ballIsMovingUp && ballCenterIsAboveBarCenter) {
+                                    this.moveTopUp();
+                                }
+                                else if (ballIsMovingDown && ballCenterIsUnderBarCenter) {
+                                    this.moveBottomDown();
+                                }
+                            }
                         }
                     }
                 }
+            }
+            Bar.prototype.moveTopUp = function () {
+                let newBarPosition = this.position.y - this.steps;
+                let minimumBarPositionLimit = 0;
+                this.position.y = Math.max(newBarPosition, minimumBarPositionLimit);
+            }
+            Bar.prototype.moveBottomDown = function () {
+                let newBarPosition = this.position.y + this.steps;
+                let maximumBarPositionLimit = $scope.Field.Canvas.height - this.height;
+                this.position.y = Math.min(newBarPosition, maximumBarPositionLimit);
             }
             Scoreboard.prototype.draw = function () {
                 let canvas = $scope.Field.Canvas;
@@ -497,7 +546,7 @@ angular.module('myApp.view1', ['ngRoute'])
             this.Scoreboard.position.x = 25;
 
             this.Bar.isModeComputer = true;
-            this.Bar.computerMovementCondition = () => {
+            this.Bar.computerMoveCondition = () => {
                 return $scope.Ball.velocity.horizontalSense < 0;
             }
         }
@@ -508,7 +557,7 @@ angular.module('myApp.view1', ['ngRoute'])
             Player.call(this);
             this.Bar.color = "rgba(0,0,200,0.5)";
             this.Bar.position.x = $scope.Field.Canvas.width - this.Bar.width;
-            this.Bar.computerMovementCondition = () => {
+            this.Bar.computerMoveCondition = () => {
                 return $scope.Ball.velocity.horizontalSense > 0;
             }
 
@@ -520,7 +569,7 @@ angular.module('myApp.view1', ['ngRoute'])
         RightPlayer.prototype = Object.create(Player.prototype);
 
         $scope.Browser = new Browser();
-        $scope.Browser.checkIfIsMobileBrowser();
+        $scope.Browser
 
         $scope.Game = new Game();
 
@@ -627,8 +676,8 @@ angular.module('myApp.view1', ['ngRoute'])
             $scope.Game.isGameStarted = true;
             if ($scope.Game.isGamePaused === false) {
                 $scope.Ball.move();
-                $scope.Players.left.Bar.move();
-                $scope.Players.right.Bar.move();
+                $scope.Players.left.Bar.computerMove();
+                $scope.Players.right.Bar.computerMove();
                 window.requestAnimationFrame($scope.draw);
             }
         };
@@ -743,7 +792,7 @@ angular.module('myApp.view1', ['ngRoute'])
                     break;
             }
         };
-        $scope.computerPlayer = function () {
+        $scope.computerMove = function () {
             for (var i = 0; i < Config.difficultyModeComputer / 10; i++) {
                 if (Config.leftIsModeComputer && velocity.horizontalSense < 0) {
                     if ($scope.Ball.position.y < playerBarY.left + Config.playerBarHeight && velocity.verticalSense < 0) {
