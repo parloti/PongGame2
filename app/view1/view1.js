@@ -70,6 +70,7 @@ angular.module('myApp.view1', ['ngRoute'])
             this.maxWidth = this.maxHeight * this.widthHeightRatio;
             this.maxHeightRelativeToScreenWidth = screen.availWidth / this.widthHeightRatio;
             this.border;
+            this.color = "rgb(255, 255, 255)";
             this.center = {
                 x: this.width / 2,
                 y: this.height / 2
@@ -79,7 +80,7 @@ angular.module('myApp.view1', ['ngRoute'])
 
         Field.prototype.calculateSize = function () {
             if (screen.availHeight > this.maxHeight && screen.availWidth > this.maxWidth) {
-                this.height = 400;
+                this.height = this.maxHeight;
             }
             else {
                 this.height = Math.min(screen.availHeight, this.maxHeightRelativeToScreenWidth);
@@ -97,21 +98,26 @@ angular.module('myApp.view1', ['ngRoute'])
         Field.prototype.draw = function () {
             let canvas = this.Canvas;
             let ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, this.width, this.height);
+            let field = () => {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(0, 0, this.width, this.height);
+            }
             let centralCircle = () => {
                 ctx.beginPath();
                 ctx.fillStyle = "rgb(255, 255, 0)";
-                ctx.arc(this.Canvas.width / 2, this.Canvas.height / 2, this.centralCircleRadius, 0, Math.PI * 2, true);
+                ctx.arc(this.width / 2, this.height / 2, this.centralCircleRadius, 0, Math.PI * 2, true);
                 ctx.stroke();
             }
 
             let centralLine = () => {
                 ctx.beginPath();
                 ctx.strokeStyle = 'black';
-                ctx.moveTo(this.Canvas.width / 2, 0);
-                ctx.lineTo(this.Canvas.width / 2, this.Canvas.height);
+                ctx.moveTo(this.width / 2, 0);
+                ctx.lineTo(this.width / 2, this.height);
                 ctx.stroke();
             }
+            field();
             centralCircle();
             centralLine();
         }
