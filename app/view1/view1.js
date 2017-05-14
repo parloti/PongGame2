@@ -31,9 +31,34 @@ angular.module('myApp.view1', ['ngRoute'])
         }
 
         function Mouse() {
-            //https://docs.angularjs.org/api/ngTouch/service/$swipe
-            //http://stackoverflow.com/questions/26170029/ng-touchstart-and-ng-touchend-in-angularjs/26176810#26176810
+            this.listeners = [];
+            this.isMouseDown = false;
 
+            /*if ($event.type === "mousedown") {
+             $scope.mouseDown = true;
+             }
+             else {
+             console.error("$event.type should be 'mousedown' check the diretive.");
+             }
+             var elem;
+             //canvasCurrentTarget($event);
+             $scope.Field.onClick($event);*/
+        }
+
+        Mouse.prototype.runListeners = function () {
+            this.listeners.forEach(function (listener) {
+                console.log(listener);
+                listener();
+            })
+        }
+        Mouse.prototype.onMouseDown = function ($event) {
+            if ($event.type === "mousedown") {
+                this.isMouseDown = true;
+                this.runListeners($event);
+            }
+            else {
+                console.error("$event.type should be 'mousedown' check the diretive.");
+            }
         }
 
         function Game() {
@@ -581,7 +606,8 @@ angular.module('myApp.view1', ['ngRoute'])
         RightPlayer.prototype = Object.create(Player.prototype);
 
         $scope.Browser = new Browser();
-        $scope.Browser
+
+        $scope.Mouse = new Mouse();
 
         $scope.Game = new Game();
 

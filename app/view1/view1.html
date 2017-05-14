@@ -1,7 +1,8 @@
 <p ng-if="Browser.isMobileBrowser===false">Use mouse click or spacebar to start or pause and a, z, k, m, ] or / to move
     the
     bar.</p>
-<div class="canvas" ng-app="myApp" ng-controller="View1Ctrl" ng-mousedown="init($event)" ng-mouseup="mouseDown = false">
+<div class="canvas" ng-app="myApp" ng-controller="View1Ctrl" ng-mousedown="Mouse.onMouseDown($event)"
+     ng-mouseup="Mouse.isMouseDown = false">
     <canvas id="game" width="0" height="0"
             ng-style="{'height':+ Field.height +'px','width':+ Field.width +'px'}"></canvas>
 </div>
