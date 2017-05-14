@@ -69,8 +69,8 @@ angular.module('myApp.view1', ['ngRoute'])
             this.maxHeight = 400;
             this.maxWidth = this.maxHeight * this.widthHeightRatio;
             this.maxHeightRelativeToScreenWidth = screen.availWidth / this.widthHeightRatio;
-            this.border;
-            this.color = "rgb(255, 255, 255)";
+            this.borderColor = "rgba(0, 0, 0,1)";
+            this.color = "rgba(255, 255, 255,1)";
             this.center = {
                 x: this.width / 2,
                 y: this.height / 2
@@ -100,14 +100,19 @@ angular.module('myApp.view1', ['ngRoute'])
             let ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, this.width, this.height);
             let field = () => {
+                ctx.beginPath();
                 ctx.fillStyle = this.color;
+                ctx.strokeStyle = 'black';
                 ctx.fillRect(0, 0, this.width, this.height);
+                ctx.strokeRect(0, 0, this.width, this.height);
+                ctx.closePath();
             }
             let centralCircle = () => {
                 ctx.beginPath();
                 ctx.fillStyle = "rgb(255, 255, 0)";
                 ctx.arc(this.width / 2, this.height / 2, this.centralCircleRadius, 0, Math.PI * 2, true);
                 ctx.stroke();
+                ctx.closePath();
             }
 
             let centralLine = () => {
@@ -116,6 +121,7 @@ angular.module('myApp.view1', ['ngRoute'])
                 ctx.moveTo(this.width / 2, 0);
                 ctx.lineTo(this.width / 2, this.height);
                 ctx.stroke();
+                ctx.closePath();
             }
             field();
             centralCircle();
