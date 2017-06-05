@@ -33,31 +33,21 @@ angular.module('myApp.view1', ['ngRoute'])
         function Mouse() {
             this.listeners = [];
             this.isMouseDown = false;
-
-            /*if ($event.type === "mousedown") {
-             $scope.mouseDown = true;
-             }
-             else {
-             console.error("$event.type should be 'mousedown' check the diretive.");
-             }
-             var elem;
-             //canvasCurrentTarget($event);
-             $scope.Field.onClick($event);*/
         }
 
-        Mouse.prototype.runListeners = function () {
+        Mouse.prototype.runListeners = function (x, y) {
+            console.log(this.listeners);
             this.listeners.forEach(function (listener) {
-                console.log(listener);
-                listener();
+                listener(x, y);
             })
         }
         Mouse.prototype.onMouseDown = function ($event) {
             if ($event.type === "mousedown") {
                 this.isMouseDown = true;
-                this.runListeners($event);
+                this.runListeners($event.offsetX, $event.offsetY);
             }
             else {
-                console.error("$event.type should be 'mousedown' check the diretive.");
+                console.error("$event.type should be 'mousedown' check the directive.");
             }
         }
 
@@ -183,13 +173,6 @@ angular.module('myApp.view1', ['ngRoute'])
                     $scope.Players.right.Bar.move({sense: "down", player: "right"});
                 }
             }
-            else if (Math.pow($event.offsetX - Config.canvasWidth / 2, 2) + Math.pow($event.offsetY - Config.canvasHeight / 2, 2) < 50 * 50) {
-                $scope.PauseButton.onClick();
-
-            }
-            else {
-                console.log("none");
-            }
         }
 
         function PauseButton() {
@@ -201,6 +184,7 @@ angular.module('myApp.view1', ['ngRoute'])
                 y: $scope.Field.Canvas.height / 2
             }
             this.color = "rgba(50,50,50,0.8)";
+            $scope.Mouse.listeners.push(this.handleClick.bind(this));
         }
 
         PauseButton.prototype.draw = function () {
@@ -233,12 +217,20 @@ angular.module('myApp.view1', ['ngRoute'])
                 ctx.fill();
             }
             equilateralTriangleCircumscribed();
-
         }
         PauseButton.prototype.onClick = function () {
             $scope.Game.isGamePaused = !$scope.Game.isGamePaused;
             if ($scope.Game.isGamePaused === false) {
                 window.requestAnimationFrame($scope.draw);
+            }
+        }
+        PauseButton.prototype.handleClick = function (x, y) {
+            var horizontalDistanceFromCenter = x - $scope.Field.width / 2;
+            var verticalDistanceFromCenter = y - $scope.Field.height / 2;
+            var squaredDistanceFromCenter = Math.pow(horizontalDistanceFromCenter, 2) + Math.pow(verticalDistanceFromCenter, 2);
+
+            if (squaredDistanceFromCenter < Math.pow(this.outsideCircleRadius, 2)) {
+                this.onClick();
             }
         }
 
@@ -463,6 +455,7 @@ angular.module('myApp.view1', ['ngRoute'])
         }
 
         function Player() {
+
             function Bar() {
                 this.width = 10;
                 this.height = 80;
@@ -476,6 +469,8 @@ angular.module('myApp.view1', ['ngRoute'])
                 this.isModeComputer = false;
                 this.computerSpeed = 3;
                 this.computerMoveCondition = false;
+
+                $scope.Mouse.listeners.push(this.handleClick.bind(this));
             }
 
             function Scoreboard() {
@@ -561,6 +556,27 @@ angular.module('myApp.view1', ['ngRoute'])
                 let maximumBarPositionLimit = $scope.Field.Canvas.height - this.height;
                 this.position.y = Math.min(newBarPosition, maximumBarPositionLimit);
             }
+            Bar.prototype.onClick = function (y) {
+                if ($scope.Game.isGamePaused === false) {
+                    if (y < $scope.Players.right.Bar.position.y + $scope.Players.right.Bar.height / 2) {
+                        console.log("levantar barra");
+                        var isMouseAction = true;
+                        $scope.startMotionIntervalMouse({sense: "up", player: "right"});
+                        $scope.Players.right.Bar.move({sense: "up", player: "right"});
+                    }
+                    else if (y > $scope.Players.right.Bar.position.y + $scope.Players.right.Bar.height / 2) {
+                        console.log("abaixar barra");
+                        $scope.startMotionIntervalMouse({sense: "down", player: "right"});
+                        $scope.Players.right.Bar.move({sense: "down", player: "right"});
+                    }
+                }
+            }
+            Bar.prototype.handleClick = function (x, y) {
+                if (this.clickableArea[0] <= x && x <= this.clickableArea[1]) {
+                    this.onClick(y);
+                }
+            }
+
             Scoreboard.prototype.draw = function () {
                 let canvas = $scope.Field.Canvas;
                 let ctx = canvas.getContext('2d');
@@ -577,15 +593,17 @@ angular.module('myApp.view1', ['ngRoute'])
             Player.call(this);
             this.Bar.color = "rgba(200,0,0,0.5)";
             this.Bar.position.x = 0;
-
-            this.Scoreboard.color = "rgba(200,0,0,0.5)";
-            this.Scoreboard.textAlign = "left";
-            this.Scoreboard.position.x = 25;
+            this.Bar.clickableArea = [0, $scope.Field.width / 8];
 
             this.Bar.isModeComputer = true;
             this.Bar.computerMoveCondition = () => {
                 return $scope.Ball.velocity.horizontalSense < 0;
             }
+
+            this.Scoreboard.color = "rgba(200,0,0,0.5)";
+            this.Scoreboard.textAlign = "left";
+            this.Scoreboard.position.x = 25;
+
         }
 
         LeftPlayer.prototype = Object.create(Player.prototype);
@@ -594,6 +612,9 @@ angular.module('myApp.view1', ['ngRoute'])
             Player.call(this);
             this.Bar.color = "rgba(0,0,200,0.5)";
             this.Bar.position.x = $scope.Field.Canvas.width - this.Bar.width;
+            this.Bar.clickableArea = [$scope.Field.width - $scope.Field.width / 8, $scope.Field.width];
+
+            this.Bar.isModeComputer = false;
             this.Bar.computerMoveCondition = () => {
                 return $scope.Ball.velocity.horizontalSense > 0;
             }
